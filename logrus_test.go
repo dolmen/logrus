@@ -17,7 +17,7 @@ func LogAndAssertJSON(t *testing.T, log func(*Logger), assertions func(fields Fi
 
 	logger := New()
 	logger.Out = &buffer
-	logger.Formatter = new(JSONFormatter)
+	logger.SetFormatter(&JSONFormatter{})
 
 	log(logger)
 
@@ -32,9 +32,9 @@ func LogAndAssertText(t *testing.T, log func(*Logger), assertions func(fields ma
 
 	logger := New()
 	logger.Out = &buffer
-	logger.Formatter = &TextFormatter{
+	logger.SetFormatter(&TextFormatter{
 		DisableColors: true,
-	}
+	})
 
 	log(logger)
 
@@ -137,7 +137,7 @@ func TestWithFieldsShouldAllowAssignments(t *testing.T) {
 
 	logger := New()
 	logger.Out = &buffer
-	logger.Formatter = new(JSONFormatter)
+	logger.SetFormatter(&JSONFormatter{})
 
 	localLog := logger.WithFields(Fields{
 		"key1": "value1",
@@ -216,7 +216,7 @@ func TestDoubleLoggingDoesntPrefixPreviousFields(t *testing.T) {
 
 	logger := New()
 	logger.Out = &buffer
-	logger.Formatter = new(JSONFormatter)
+	logger.SetFormatter(&JSONFormatter{})
 
 	llog := logger.WithField("context", "eating raw fish")
 
