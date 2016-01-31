@@ -101,14 +101,14 @@ func (f *TextFormatter) Format(entry *Entry) ([]byte, error) {
 		f.printColored(b, entry, keys, timestampFormat)
 	} else {
 		if !f.DisableTimestamp {
-			f.appendKeyValue(b, "time", entry.Time.Format(timestampFormat))
+			appendKeyValue(b, "time", entry.Time.Format(timestampFormat))
 		}
-		f.appendKeyValue(b, "level", entry.Level.String())
+		appendKeyValue(b, "level", entry.Level.String())
 		if entry.Message != "" {
-			f.appendKeyValue(b, "msg", entry.Message)
+			appendKeyValue(b, "msg", entry.Message)
 		}
 		for _, key := range keys {
-			f.appendKeyValue(b, key, entry.Data[key])
+			appendKeyValue(b, key, entry.Data[key])
 		}
 	}
 
@@ -160,7 +160,7 @@ func (f *TextFormatter) needsQuoting(text string) bool {
 	return false
 }
 
-func (f *TextFormatter) appendKeyValue(b *bytes.Buffer, key string, value interface{}) {
+func appendKeyValue(b *bytes.Buffer, key string, value interface{}) {
 
 	b.WriteString(key)
 	b.WriteByte('=')
