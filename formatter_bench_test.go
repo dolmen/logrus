@@ -79,8 +79,9 @@ func BenchmarkLargeJSONFormatter(b *testing.B) {
 	doBenchmark(b, &JSONFormatter{}, largeFields)
 }
 
-func doBenchmark(b *testing.B, formatter Formatter, fields Fields) {
+func doBenchmark(b *testing.B, factory FormatterFactory, fields Fields) {
 	logger := New()
+	formatter, _ := factory.Build()
 
 	entry := &Entry{
 		Time:    time.Time{},

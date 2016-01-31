@@ -66,9 +66,10 @@ func (mw *MutexWrap) Disable() {
 //
 // It's recommended to make this a global instance called `log`.
 func New() *Logger {
+	fmt, _ := (&TextFormatter{}).Build()
 	return &Logger{
 		Out:       os.Stderr,
-		Formatter: new(TextFormatter),
+		Formatter: fmt,
 		Hooks:     make(LevelHooks),
 		Level:     InfoLevel,
 	}
@@ -87,7 +88,12 @@ func (logger *Logger) releaseEntry(entry *Entry) {
 }
 
 // SetFormatter changes the Entry formatter
-func (logger *Logger) SetFormatter(fmt Formatter) {
+func (logger *Logger) SetFormatter(factory FormatterFactory) {
+	fmt, err := factory.Build()
+	if err != nil {
+		// Panic (instead of returning err) to preserve the interface
+		panic("Can't build formatter: " + err.Error())
+	}
 	logger.mu.Lock()
 	defer logger.mu.Unlock()
 	logger.Formatter = fmt

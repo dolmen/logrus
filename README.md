@@ -360,18 +360,30 @@ Third party logging formatters:
 * [`prefixed`](https://github.com/x-cray/logrus-prefixed-formatter). Displays log entry source along with alternative layout.
 * [`zalgo`](https://github.com/aybabtme/logzalgo). Invoking the P͉̫o̳̼̊w̖͈̰͎e̬͔̭͂r͚̼̹̲ ̫͓͉̳͈ō̠͕͖̚f̝͍̠ ͕̲̞͖͑Z̖̫̤̫ͪa͉̬͈̗l͖͎g̳̥o̰̥̅!̣͔̲̻͊̄ ̙̘̦̹̦.
 
-You can define your formatter by implementing the `Formatter` interface,
+You can define your formatter by implementing the `FormatterFactory` interface,
+requiring a `Build` method. `Build` returns a `Formatter` interface
 requiring a `Format` method. `Format` takes an `*Entry`. `entry.Data` is a
 `Fields` type (`map[string]interface{}`) with all your fields as well as the
 default ones (see Entries section above):
 
 ```go
-type MyJSONFormatter struct {
-}
+// The public type that can contain configuration settings for init time
+type MyJSONFormatter struct{}
 
-log.SetFormatter(new(MyJSONFormatter))
+// A private type that defines the internal representation for runtime
+// The Build() method of the FormatterFactory is free to use not just one type
+// but maybe a few to return the best implementation depending on the user
+// choices.
+type myJSONFormatter struct{}
 
-func (f *MyJSONFormatter) Format(entry *Entry) ([]byte, error) {
+var (
+    _ logrus.FormatterFactory = &MyJSONFormatter{}
+    _ logrus.Formatter        = &myJSONFormatter{}
+)
+
+func (f MyJSONFormatter) Build() (myJSONFormatter, error)
+
+func (f *myJSONFormatter) Format(entry *Entry) ([]byte, error) {
   // Note this doesn't include Time, Level and Message which are available on
   // the Entry. Consult `godoc` on information about those fields or read the
   // source of the official loggers.
@@ -381,6 +393,10 @@ func (f *MyJSONFormatter) Format(entry *Entry) ([]byte, error) {
     }
   return append(serialized, '\n'), nil
 }
+
+// Use of the custom formatter
+log.SetFormatter(&MyJSONFormatter{})
+
 ```
 
 #### Logger as an `io.Writer`

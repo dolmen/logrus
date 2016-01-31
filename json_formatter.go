@@ -41,7 +41,21 @@ type JSONFormatter struct {
 	FieldMap FieldMap
 }
 
-func (f *JSONFormatter) Format(entry *Entry) ([]byte, error) {
+// The internal representation
+type jsonFormatter JSONFormatter
+
+func (factory *JSONFormatter) Build() (Formatter, error) {
+	if factory.TimestampFormat == "" {
+		return &jsonFormatter{
+			TimestampFormat: DefaultTimestampFormat,
+		}, nil
+	}
+	// TODO more TimestampFormat validation
+
+	return jsonFormatter{TimestampFormat: factory.TimestampFormat}, nil
+}
+
+func (f jsonFormatter) Format(entry *Entry) ([]byte, error) {
 	data := make(Fields, len(entry.Data)+3)
 	for k, v := range entry.Data {
 		switch v := v.(type) {
@@ -54,11 +68,6 @@ func (f *JSONFormatter) Format(entry *Entry) ([]byte, error) {
 		}
 	}
 	prefixFieldClashes(data)
-
-	timestampFormat := f.TimestampFormat
-	if timestampFormat == "" {
-		timestampFormat = DefaultTimestampFormat
-	}
 
 	if !f.DisableTimestamp {
 		data[f.FieldMap.resolve(FieldKeyTime)] = entry.Time.Format(timestampFormat)

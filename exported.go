@@ -21,8 +21,8 @@ func SetOutput(out io.Writer) {
 }
 
 // SetFormatter sets the standard logger formatter.
-func SetFormatter(formatter Formatter) {
-	std.SetFormatter(formatter)
+func SetFormatter(factory FormatterFactory) {
+	std.SetFormatter(factory)
 }
 
 // SetLevel sets the standard logger level.

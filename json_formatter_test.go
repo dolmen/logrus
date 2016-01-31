@@ -8,7 +8,7 @@ import (
 )
 
 func TestErrorNotLost(t *testing.T) {
-	formatter := &JSONFormatter{}
+	formatter, _ := (&JSONFormatter{}).Build()
 
 	b, err := formatter.Format(WithField("error", errors.New("wild walrus")))
 	if err != nil {
@@ -27,7 +27,7 @@ func TestErrorNotLost(t *testing.T) {
 }
 
 func TestErrorNotLostOnFieldNotNamedError(t *testing.T) {
-	formatter := &JSONFormatter{}
+	formatter, _ := (&JSONFormatter{}).Build()
 
 	b, err := formatter.Format(WithField("omg", errors.New("wild walrus")))
 	if err != nil {
@@ -46,7 +46,7 @@ func TestErrorNotLostOnFieldNotNamedError(t *testing.T) {
 }
 
 func TestFieldClashWithTime(t *testing.T) {
-	formatter := &JSONFormatter{}
+	formatter, _ := (&JSONFormatter{}).Build()
 
 	b, err := formatter.Format(WithField("time", "right now!"))
 	if err != nil {
@@ -69,7 +69,7 @@ func TestFieldClashWithTime(t *testing.T) {
 }
 
 func TestFieldClashWithMsg(t *testing.T) {
-	formatter := &JSONFormatter{}
+	formatter, _ := (&JSONFormatter{}).Build()
 
 	b, err := formatter.Format(WithField("msg", "something"))
 	if err != nil {
@@ -88,7 +88,7 @@ func TestFieldClashWithMsg(t *testing.T) {
 }
 
 func TestFieldClashWithLevel(t *testing.T) {
-	formatter := &JSONFormatter{}
+	formatter, _ := (&JSONFormatter{}).Build()
 
 	b, err := formatter.Format(WithField("level", "something"))
 	if err != nil {
@@ -107,7 +107,7 @@ func TestFieldClashWithLevel(t *testing.T) {
 }
 
 func TestJSONEntryEndsWithNewline(t *testing.T) {
-	formatter := &JSONFormatter{}
+	formatter, _ := (&JSONFormatter{}).Build()
 
 	b, err := formatter.Format(WithField("level", "something"))
 	if err != nil {
