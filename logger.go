@@ -86,6 +86,11 @@ func (logger *Logger) releaseEntry(entry *Entry) {
 	logger.entryPool.Put(entry)
 }
 
+// SetFormatter changes the Entry formatter
+func (logger *Logger) SetFormatter(fmt Formatter) {
+	logger.Formatter = fmt
+}
+
 // Adds a field to the log entry, note that it doesn't log until you call
 // Debug, Print, Info, Warn, Fatal or Panic. It only creates a log entry.
 // If you want multiple fields, use `WithFields`.
