@@ -88,6 +88,8 @@ func (logger *Logger) releaseEntry(entry *Entry) {
 
 // SetFormatter changes the Entry formatter
 func (logger *Logger) SetFormatter(fmt Formatter) {
+	logger.mu.Lock()
+	defer logger.mu.Unlock()
 	logger.Formatter = fmt
 }
 

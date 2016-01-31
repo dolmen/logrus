@@ -22,9 +22,7 @@ func SetOutput(out io.Writer) {
 
 // SetFormatter sets the standard logger formatter.
 func SetFormatter(formatter Formatter) {
-	std.mu.Lock()
-	defer std.mu.Unlock()
-	std.Formatter = formatter
+	std.SetFormatter(formatter)
 }
 
 // SetLevel sets the standard logger level.
