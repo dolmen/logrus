@@ -1,6 +1,9 @@
 package logrus
 
-import "time"
+import (
+	"io"
+	"time"
+)
 
 const DefaultTimestampFormat = time.RFC3339
 
@@ -16,6 +19,12 @@ const DefaultTimestampFormat = time.RFC3339
 // logged to `logger.Out`.
 type Formatter interface {
 	Format(*Entry) ([]byte, error)
+}
+
+// The FormatterFactory interface is used to separate the step of Formatter
+// initialization (building) from formatting
+type FormatterFactory interface {
+	Build(out io.Writer, minimumLevel Level) (Formatter, error)
 }
 
 // This is to not silently overwrite `time`, `msg` and `level` fields when
