@@ -59,17 +59,19 @@ func (mw *MutexWrap) Disable() {
 //
 //    var log = &Logger{
 //      Out: os.Stderr,
-//      Formatter: new(JSONFormatter),
 //      Hooks: make(LevelHooks),
 //      Level: logrus.DebugLevel,
+//    }
+//    func init() {
+//      log.SetFormatter(&JSONFormatter{})
 //    }
 //
 // It's recommended to make this a global instance called `log`.
 func New() *Logger {
-	fmt, _ := (&TextFormatter{}).Build()
+	formatter, _ := (&TextFormatter{}).Build(os.Stderr, InfoLevel)
 	return &Logger{
 		Out:       os.Stderr,
-		Formatter: fmt,
+		Formatter: formatter,
 		Hooks:     make(LevelHooks),
 		Level:     InfoLevel,
 	}
@@ -89,14 +91,14 @@ func (logger *Logger) releaseEntry(entry *Entry) {
 
 // SetFormatter changes the Entry formatter
 func (logger *Logger) SetFormatter(factory FormatterFactory) {
-	fmt, err := factory.Build()
+	formatter, err := factory.Build(logger.Out, logger.Level)
 	if err != nil {
 		// Panic (instead of returning err) to preserve the interface
 		panic("Can't build formatter: " + err.Error())
 	}
 	logger.mu.Lock()
 	defer logger.mu.Unlock()
-	logger.Formatter = fmt
+	logger.Formatter = formatter
 }
 
 // Adds a field to the log entry, note that it doesn't log until you call

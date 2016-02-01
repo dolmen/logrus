@@ -31,12 +31,12 @@ func BenchmarkDummyLoggerNoLock(b *testing.B) {
 	doLoggerBenchmarkNoLock(b, nullf, &TextFormatter{DisableColors: true}, smallFields)
 }
 
-func doLoggerBenchmark(b *testing.B, out *os.File, formatter Formatter, fields Fields) {
+func doLoggerBenchmark(b *testing.B, out *os.File, settings FormatterFactory, fields Fields) {
 	logger := Logger{
-		Out:       out,
-		Level:     InfoLevel,
-		Formatter: formatter,
+		Out:   out,
+		Level: InfoLevel,
 	}
+	logger.SetFormatter(settings)
 	entry := logger.WithFields(fields)
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
@@ -45,12 +45,12 @@ func doLoggerBenchmark(b *testing.B, out *os.File, formatter Formatter, fields F
 	})
 }
 
-func doLoggerBenchmarkNoLock(b *testing.B, out *os.File, formatter Formatter, fields Fields) {
+func doLoggerBenchmarkNoLock(b *testing.B, out *os.File, settings FormatterFactory, fields Fields) {
 	logger := Logger{
-		Out:       out,
-		Level:     InfoLevel,
-		Formatter: formatter,
+		Out:   out,
+		Level: InfoLevel,
 	}
+	logger.SetFormatter(settings)
 	logger.SetNoLock()
 	entry := logger.WithFields(fields)
 	b.RunParallel(func(pb *testing.PB) {

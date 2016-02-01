@@ -3,6 +3,7 @@ package logrus
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 )
 
 type fieldKey string
@@ -42,20 +43,33 @@ type JSONFormatter struct {
 }
 
 // The internal representation
-type jsonFormatter JSONFormatter
-
-func (factory *JSONFormatter) Build() (Formatter, error) {
-	if factory.TimestampFormat == "" {
-		return &jsonFormatter{
-			TimestampFormat: DefaultTimestampFormat,
-		}, nil
-	}
-	// TODO more TimestampFormat validation
-
-	return jsonFormatter{TimestampFormat: factory.TimestampFormat}, nil
+type jsonFormatter struct {
+	timestampFormat string
+	keyTime         string
+	keyLevel        string
+	keyMsg          string
 }
 
-func (f jsonFormatter) Format(entry *Entry) ([]byte, error) {
+func (factory *JSONFormatter) Build(out io.Writer, minimumLevel Level) (Formatter, error) {
+	fmt := jsonFormatter{
+		timestampFormat: factory.TimestampFormat,
+		keyTime:         factory.FieldMap.resolve(FieldKeyTime),
+		keyLevel:        factory.FieldMap.resolve(FieldKeyLevel),
+		keyMsg:          factory.FieldMap.resolve(FieldKeyMsg),
+	}
+	if factory.DisableTimestamp {
+		fmt.keyTime = ""
+	} else {
+		if fmt.timestampFormat == "" {
+			fmt.timestampFormat = DefaultTimestampFormat
+		}
+		// TODO more TimestampFormat validation
+	}
+
+	return &fmt, nil
+}
+
+func (f *jsonFormatter) Format(entry *Entry) ([]byte, error) {
 	data := make(Fields, len(entry.Data)+3)
 	for k, v := range entry.Data {
 		switch v := v.(type) {
@@ -69,11 +83,11 @@ func (f jsonFormatter) Format(entry *Entry) ([]byte, error) {
 	}
 	prefixFieldClashes(data)
 
-	if !f.DisableTimestamp {
-		data[f.FieldMap.resolve(FieldKeyTime)] = entry.Time.Format(timestampFormat)
+	if f.keyTime != "" {
+		data[f.keyTime] = entry.Time.Format(f.timestampFormat)
 	}
-	data[f.FieldMap.resolve(FieldKeyMsg)] = entry.Message
-	data[f.FieldMap.resolve(FieldKeyLevel)] = entry.Level.String()
+	data[f.keyMsg] = entry.Message
+	data[f.keyLevel] = entry.Level.String()
 
 	serialized, err := json.Marshal(data)
 	if err != nil {

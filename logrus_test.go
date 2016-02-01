@@ -374,7 +374,7 @@ func TestEntryWriter(t *testing.T) {
 	cw := channelWriter(make(chan []byte, 1))
 	log := New()
 	log.Out = cw
-	log.Formatter = new(JSONFormatter)
+	log.SetFormatter(&JSONFormatter{})
 	log.WithField("foo", "bar").WriterLevel(WarnLevel).Write([]byte("hello\n"))
 
 	bs := <-cw

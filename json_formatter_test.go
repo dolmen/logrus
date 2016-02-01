@@ -3,12 +3,13 @@ package logrus
 import (
 	"encoding/json"
 	"errors"
+	"os"
 	"strings"
 	"testing"
 )
 
 func TestErrorNotLost(t *testing.T) {
-	formatter, _ := (&JSONFormatter{}).Build()
+	formatter, _ := (&JSONFormatter{}).Build(os.Stdout, DebugLevel)
 
 	b, err := formatter.Format(WithField("error", errors.New("wild walrus")))
 	if err != nil {
@@ -27,7 +28,7 @@ func TestErrorNotLost(t *testing.T) {
 }
 
 func TestErrorNotLostOnFieldNotNamedError(t *testing.T) {
-	formatter, _ := (&JSONFormatter{}).Build()
+	formatter, _ := (&JSONFormatter{}).Build(os.Stdout, DebugLevel)
 
 	b, err := formatter.Format(WithField("omg", errors.New("wild walrus")))
 	if err != nil {
@@ -46,7 +47,7 @@ func TestErrorNotLostOnFieldNotNamedError(t *testing.T) {
 }
 
 func TestFieldClashWithTime(t *testing.T) {
-	formatter, _ := (&JSONFormatter{}).Build()
+	formatter, _ := (&JSONFormatter{}).Build(os.Stdout, DebugLevel)
 
 	b, err := formatter.Format(WithField("time", "right now!"))
 	if err != nil {
@@ -69,7 +70,7 @@ func TestFieldClashWithTime(t *testing.T) {
 }
 
 func TestFieldClashWithMsg(t *testing.T) {
-	formatter, _ := (&JSONFormatter{}).Build()
+	formatter, _ := (&JSONFormatter{}).Build(os.Stdout, DebugLevel)
 
 	b, err := formatter.Format(WithField("msg", "something"))
 	if err != nil {
@@ -88,7 +89,7 @@ func TestFieldClashWithMsg(t *testing.T) {
 }
 
 func TestFieldClashWithLevel(t *testing.T) {
-	formatter, _ := (&JSONFormatter{}).Build()
+	formatter, _ := (&JSONFormatter{}).Build(os.Stdout, DebugLevel)
 
 	b, err := formatter.Format(WithField("level", "something"))
 	if err != nil {
@@ -107,7 +108,7 @@ func TestFieldClashWithLevel(t *testing.T) {
 }
 
 func TestJSONEntryEndsWithNewline(t *testing.T) {
-	formatter, _ := (&JSONFormatter{}).Build()
+	formatter, _ := (&JSONFormatter{}).Build(os.Stdout, DebugLevel)
 
 	b, err := formatter.Format(WithField("level", "something"))
 	if err != nil {
@@ -120,11 +121,11 @@ func TestJSONEntryEndsWithNewline(t *testing.T) {
 }
 
 func TestJSONMessageKey(t *testing.T) {
-	formatter := &JSONFormatter{
+	formatter, _ := (&JSONFormatter{
 		FieldMap: FieldMap{
 			FieldKeyMsg: "message",
 		},
-	}
+	}).Build(os.Stdout, DebugLevel)
 
 	b, err := formatter.Format(&Entry{Message: "oh hai"})
 	if err != nil {
@@ -132,16 +133,17 @@ func TestJSONMessageKey(t *testing.T) {
 	}
 	s := string(b)
 	if !(strings.Contains(s, "message") && strings.Contains(s, "oh hai")) {
+		t.Log(s)
 		t.Fatal("Expected JSON to format message key")
 	}
 }
 
 func TestJSONLevelKey(t *testing.T) {
-	formatter := &JSONFormatter{
+	formatter, _ := (&JSONFormatter{
 		FieldMap: FieldMap{
 			FieldKeyLevel: "somelevel",
 		},
-	}
+	}).Build(os.Stdout, DebugLevel)
 
 	b, err := formatter.Format(WithField("level", "something"))
 	if err != nil {
@@ -154,11 +156,11 @@ func TestJSONLevelKey(t *testing.T) {
 }
 
 func TestJSONTimeKey(t *testing.T) {
-	formatter := &JSONFormatter{
+	formatter, _ := (&JSONFormatter{
 		FieldMap: FieldMap{
 			FieldKeyTime: "timeywimey",
 		},
-	}
+	}).Build(os.Stdout, DebugLevel)
 
 	b, err := formatter.Format(WithField("level", "something"))
 	if err != nil {
@@ -171,9 +173,9 @@ func TestJSONTimeKey(t *testing.T) {
 }
 
 func TestJSONDisableTimestamp(t *testing.T) {
-	formatter := &JSONFormatter{
+	formatter, _ := (&JSONFormatter{
 		DisableTimestamp: true,
-	}
+	}).Build(os.Stdout, DebugLevel)
 
 	b, err := formatter.Format(WithField("level", "something"))
 	if err != nil {
@@ -186,7 +188,7 @@ func TestJSONDisableTimestamp(t *testing.T) {
 }
 
 func TestJSONEnableTimestamp(t *testing.T) {
-	formatter := &JSONFormatter{}
+	formatter, _ := (&JSONFormatter{}).Build(os.Stdout, DebugLevel)
 
 	b, err := formatter.Format(WithField("level", "something"))
 	if err != nil {

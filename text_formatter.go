@@ -3,10 +3,10 @@ package logrus
 import (
 	"bytes"
 	"fmt"
-	"os"
+	"io"
+	"runtime"
 	"sort"
 	"strings"
-	"sync"
 	"time"
 )
 
@@ -58,29 +58,23 @@ type TextFormatter struct {
 	QuoteCharacter string
 }
 
-func (f *TextFormatter) init(entry *Entry) {
-	if len(f.QuoteCharacter) == 0 {
-		f.QuoteCharacter = "\""
-	}
-	if entry.Logger != nil {
-		f.isTerminal = IsTerminal(entry.Logger.Out)
-	}
-}
-
 // Our internal representation
 type textFormatter struct {
 	settings  TextFormatter
 	isColored bool
 }
 
-func (factory *TextFormatter) Build() (Formatter, error) {
-	if factory.TimestampFormat == "" {
+func (factory *TextFormatter) Build(out io.Writer, minimumLevel Level) (Formatter, error) {
+	if !factory.DisableTimestamp && factory.TimestampFormat == "" {
 		factory.TimestampFormat = DefaultTimestampFormat
 	}
 	// TODO more TimestampFormat validation
 
-	// FIXME call IsTerminal on the real output
-	isColorTerminal := IsTerminal(os.Stderr) && (runtime.GOOS != "windows")
+	if factory.QuoteCharacter == "" {
+		factory.QuoteCharacter = `"`
+	}
+
+	isColorTerminal := IsTerminal(out) && (runtime.GOOS != "windows")
 	return &textFormatter{
 		settings: *factory,
 		isColored: (factory.ForceColors || isColorTerminal) &&
@@ -89,7 +83,7 @@ func (factory *TextFormatter) Build() (Formatter, error) {
 }
 
 func (f *textFormatter) Format(entry *Entry) ([]byte, error) {
-	var b *bytes.Buffer
+	prefixFieldClashes(entry.Data)
 	keys := make([]string, 0, len(entry.Data))
 	for k := range entry.Data {
 		keys = append(keys, k)
@@ -98,26 +92,24 @@ func (f *textFormatter) Format(entry *Entry) ([]byte, error) {
 	if !f.settings.DisableSorting {
 		sort.Strings(keys)
 	}
-	if entry.Buffer != nil {
-		b = entry.Buffer
-	} else {
-		b = &bytes.Buffer{}
-	}
 
-	prefixFieldClashes(entry.Data)
+	b := entry.Buffer
+	if b == nil {
+		b = bytes.NewBuffer(make([]byte, 0, 200))
+	}
 
 	if f.isColored {
 		f.printColored(b, entry, keys)
 	} else {
 		if !f.settings.DisableTimestamp {
-			appendKeyValue(b, "time", entry.Time.Format(f.settings.TimestampFormat))
+			f.appendKeyValue(b, "time", entry.Time.Format(f.settings.TimestampFormat))
 		}
-		appendKeyValue(b, "level", entry.Level.String())
+		f.appendKeyValue(b, "level", entry.Level.String())
 		if entry.Message != "" {
-			appendKeyValue(b, "msg", entry.Message)
+			f.appendKeyValue(b, "msg", entry.Message)
 		}
 		for _, key := range keys {
-			appendKeyValue(b, key, entry.Data[key])
+			f.appendKeyValue(b, key, entry.Data[key])
 		}
 	}
 
@@ -154,8 +146,8 @@ func (f *textFormatter) printColored(b *bytes.Buffer, entry *Entry, keys []strin
 	}
 }
 
-func (f *TextFormatter) needsQuoting(text string) bool {
-	if f.QuoteEmptyFields && len(text) == 0 {
+func (f *textFormatter) needsQuoting(text string) bool {
+	if f.settings.QuoteEmptyFields && len(text) == 0 {
 		return true
 	}
 	for _, ch := range text {
@@ -169,28 +161,27 @@ func (f *TextFormatter) needsQuoting(text string) bool {
 	return false
 }
 
-func appendKeyValue(b *bytes.Buffer, key string, value interface{}) {
-
+func (f *textFormatter) appendKeyValue(b *bytes.Buffer, key string, value interface{}) {
 	b.WriteString(key)
 	b.WriteByte('=')
 	f.appendValue(b, value)
 	b.WriteByte(' ')
 }
 
-func (f *TextFormatter) appendValue(b *bytes.Buffer, value interface{}) {
+func (f *textFormatter) appendValue(b *bytes.Buffer, value interface{}) {
 	switch value := value.(type) {
 	case string:
 		if !f.needsQuoting(value) {
 			b.WriteString(value)
 		} else {
-			fmt.Fprintf(b, "%s%v%s", f.QuoteCharacter, value, f.QuoteCharacter)
+			fmt.Fprintf(b, "%s%v%s", f.settings.QuoteCharacter, value, f.settings.QuoteCharacter)
 		}
 	case error:
 		errmsg := value.Error()
 		if !f.needsQuoting(errmsg) {
 			b.WriteString(errmsg)
 		} else {
-			fmt.Fprintf(b, "%s%v%s", f.QuoteCharacter, errmsg, f.QuoteCharacter)
+			fmt.Fprintf(b, "%s%v%s", f.settings.QuoteCharacter, errmsg, f.settings.QuoteCharacter)
 		}
 	default:
 		fmt.Fprint(b, value)

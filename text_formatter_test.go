@@ -3,18 +3,22 @@ package logrus
 import (
 	"bytes"
 	"errors"
+	"os"
 	"strings"
 	"testing"
 	"time"
 )
 
 func TestQuoting(t *testing.T) {
-	tf, _ := (&TextFormatter{DisableColors: true}).Build()
+	quote := `"`
+	tf, _ := (&TextFormatter{
+		DisableColors: true,
+	}).Build(os.Stdout, DebugLevel)
 
 	checkQuoting := func(q bool, value interface{}) {
 		b, _ := tf.Format(WithField("test", value))
 		idx := bytes.Index(b, ([]byte)("test="))
-		cont := bytes.Contains(b[idx+5:], []byte(tf.QuoteCharacter))
+		cont := bytes.Contains(b[idx+5:], []byte(quote))
 		if cont != q {
 			if q {
 				t.Errorf("quoting expected for: %#v", value)
@@ -35,19 +39,33 @@ func TestQuoting(t *testing.T) {
 	checkQuoting(true, errors.New("invalid argument"))
 
 	// Test for custom quote character.
-	tf.QuoteCharacter = "`"
+	quote = "`"
+	tf, _ = (&TextFormatter{
+		DisableColors:  true,
+		QuoteCharacter: quote,
+	}).Build(os.Stdout, DebugLevel)
+
 	checkQuoting(false, "")
 	checkQuoting(false, "abcd")
 	checkQuoting(true, "/foobar")
 	checkQuoting(true, errors.New("invalid argument"))
 
 	// Test for multi-character quotes.
-	tf.QuoteCharacter = "§~±"
+	quote = "§~±"
+	tf, _ = (&TextFormatter{
+		DisableColors:  true,
+		QuoteCharacter: quote,
+	}).Build(os.Stdout, DebugLevel)
+
 	checkQuoting(false, "abcd")
 	checkQuoting(true, errors.New("invalid argument"))
 
 	// Test for quoting empty fields.
-	tf.QuoteEmptyFields = true
+	tf, _ = (&TextFormatter{
+		DisableColors:    true,
+		QuoteCharacter:   quote,
+		QuoteEmptyFields: true,
+	}).Build(os.Stdout, DebugLevel)
 	checkQuoting(true, "")
 	checkQuoting(false, "abcd")
 	checkQuoting(true, errors.New("invalid argument"))
@@ -55,11 +73,11 @@ func TestQuoting(t *testing.T) {
 
 func TestTimestampFormat(t *testing.T) {
 	checkTimeStr := func(format string) {
-		customFormatter, _ := (&TextFormatter{DisableColors: true, TimestampFormat: format}).Build()
+		customFormatter, _ := (&TextFormatter{DisableColors: true, TimestampFormat: format}).Build(os.Stdout, DebugLevel)
 		customStr, _ := customFormatter.Format(WithField("test", "test"))
 		timeStart := bytes.Index(customStr, ([]byte)("time="))
 		timeEnd := bytes.Index(customStr, ([]byte)("level="))
-		timeStr := customStr[timeStart+5+len(customFormatter.QuoteCharacter) : timeEnd-1-len(customFormatter.QuoteCharacter)]
+		timeStr := customStr[timeStart+5+1 : timeEnd-1-1]
 		if format == "" {
 			format = time.RFC3339
 		}
@@ -75,7 +93,7 @@ func TestTimestampFormat(t *testing.T) {
 }
 
 func TestDisableTimestampWithColoredOutput(t *testing.T) {
-	tf := &TextFormatter{DisableTimestamp: true, ForceColors: true}
+	tf, _ := (&TextFormatter{DisableTimestamp: true, ForceColors: true}).Build(os.Stdout, DebugLevel)
 
 	b, _ := tf.Format(WithField("test", "test"))
 	if strings.Contains(string(b), "[0000]") {
